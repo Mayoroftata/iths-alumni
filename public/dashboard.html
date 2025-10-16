@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Committee Dashboard</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .dashboard-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            margin: -20px -20px 2rem -20px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>Committee Dashboard</h1>
+            <p>ITHS 2011 Alumni Election - Registered Candidates</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalCandidates">0</div>
+                <div>Total Candidates</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="uniquePositions">0</div>
+                <div>Positions</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="loadCandidates()">Refresh</button>
+            <input type="text" id="search" placeholder="Search candidates..." oninput="loadCandidates()">
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Position</th>
+                    <th>Email</th>
+                    <th>Registered</th>
+                </tr>
+            </thead>
+            <tbody id="candidatesTable">
+                <tr><td colspan="4">Loading...</td></tr>
+            </tbody>
+        </table>
+
+        <a href="/" class="back-link">← Back to Registration</a>
+    </div>
+
+    <script>
+        async function loadCandidates() {
+            try {
+                const response = await fetch('/api/candidates');
+                const candidates = await response.json();
+                
+                // Update stats
+                document.getElementById('totalCandidates').textContent = candidates.length;
+                document.getElementById('uniquePositions').textContent = 
+                    new Set(candidates.map(c => c.position)).size;
+                
+                // Update table
+                const searchTerm = document.getElementById('search').value.toLowerCase();
+                const filtered = candidates.filter(c => 
+                    c.name.toLowerCase().includes(searchTerm) ||
+                    c.position.toLowerCase().includes(searchTerm) ||
+                    c.email.toLowerCase().includes(searchTerm)
+                );
+                
+                const tableBody = document.getElementById('candidatesTable');
+                tableBody.innerHTML = filtered.map(candidate => `
+                    <tr>
+                        <td>${candidate.name}</td>
+                        <td>${candidate.position}</td>
+                        <td>${candidate.email}</td>
+                        <td>${new Date(candidate.createdAt).toLocaleDateString()}</td>
+                    </tr>
+                `).join('') || '<tr><td colspan="4">No candidates found</td></tr>';
+                
+            } catch (error) {
+                document.getElementById('candidatesTable').innerHTML = 
+                    '<tr><td colspan="4">Error loading data</td></tr>';
+            }
+        }
+
+        // Load candidates on page load
+        loadCandidates();
+        // Auto-refresh every 30 seconds
+        setInterval(loadCandidates, 30000);
+    </script>
+</body>
+</html>
